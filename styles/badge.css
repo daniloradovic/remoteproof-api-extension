@@ -1,0 +1,90 @@
+#remoteproof-badge {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  row-gap: 6px;
+  padding: 8px 12px 10px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-weight: 500;
+  margin: 12px 0;
+  border: 1px solid transparent;
+  max-width: 600px;
+  cursor: default;
+  line-height: 1.2;
+}
+
+#remoteproof-badge .rp-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: currentColor;
+}
+
+#remoteproof-badge .rp-label {
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+#remoteproof-badge .rp-dismiss {
+  margin-left: auto;
+  background: none;
+  border: none;
+  cursor: pointer;
+  opacity: 0.4;
+  font-size: 16px;
+  line-height: 1;
+  padding: 0 2px;
+  color: inherit;
+  flex-shrink: 0;
+}
+
+#remoteproof-badge .rp-dismiss:hover {
+  opacity: 1;
+}
+
+#remoteproof-badge .rp-reason {
+  flex-basis: 100%;
+  margin-left: 16px;
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 1.5;
+  opacity: 0.85;
+}
+
+#remoteproof-badge.worldwide {
+  background: #f0fdf4;
+  border-color: #86efac;
+  color: #166534;
+}
+
+#remoteproof-badge.restricted {
+  background: #fff1f2;
+  border-color: #fda4af;
+  color: #9f1239;
+}
+
+#remoteproof-badge.unclear {
+  background: #fefce8;
+  border-color: #fde047;
+  color: #854d0e;
+}
+
+#remoteproof-badge.loading {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+  color: #64748b;
+}
+
+#remoteproof-badge.loading .rp-dot {
+  animation: rp-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes rp-pulse {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 1; }
+}
