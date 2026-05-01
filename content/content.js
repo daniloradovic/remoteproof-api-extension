@@ -114,3 +114,4 @@ const observer = new MutationObserver(() => {
 observer.observe(document.body, { childList: true, subtree: true });
 
 run();
+[500, 1500, 3000, 5000].forEach(delay => setTimeout(run, delay));
