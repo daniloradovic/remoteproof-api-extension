@@ -49,8 +49,8 @@ function injectBadge(badgeEl) {
   let insertBefore;
 
   if (hostname.includes('linkedin')) {
-    const fitCard = document.querySelector('.job-details-fit-level-card');
-    insertBefore = fitCard?.closest('.artdeco-card')
+    insertBefore = document.querySelector('.job-details-jobs-unified-top-card__primary-description-container')
+      || document.querySelector('.job-details-fit-level-card')?.closest('.artdeco-card')
       || document.querySelector('.jobs-description__content');
   } else if (hostname.includes('indeed')) {
     const titleContainer = document.querySelector('.jobsearch-JobInfoHeader-title-container');
