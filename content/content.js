@@ -83,6 +83,13 @@ let debounceTimer;
 
 let pollHandle = null;
 
+function nudgeLazyLoad() {
+  // Many SPAs lazy-render content based on scroll/resize/visibility events.
+  // Fire harmless events to nudge LinkedIn into hydrating the description container.
+  window.dispatchEvent(new Event('scroll'));
+  window.dispatchEvent(new Event('resize'));
+}
+
 function startPolling() {
   if (pollHandle) clearInterval(pollHandle);
   let elapsed = 0;
@@ -91,6 +98,7 @@ function startPolling() {
 
   pollHandle = setInterval(() => {
     elapsed += POLL_INTERVAL;
+    nudgeLazyLoad();
     run();
     if (processedUrl === window.location.href || elapsed >= MAX_DURATION) {
       clearInterval(pollHandle);
@@ -111,6 +119,15 @@ const observer = new MutationObserver(() => {
 });
 
 observer.observe(document.body, { childList: true, subtree: true });
+
+chrome.runtime.onMessage.addListener((message) => {
+  if (message?.type === 'REFRESH') {
+    processedUrl = null;
+    document.getElementById(BADGE_ID)?.remove();
+    run();
+    startPolling();
+  }
+});
 
 run();
 startPolling();
