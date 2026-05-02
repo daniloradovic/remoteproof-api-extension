@@ -81,11 +81,30 @@ async function run() {
 let lastUrl = location.href;
 let debounceTimer;
 
+let pollHandle = null;
+
+function startPolling() {
+  if (pollHandle) clearInterval(pollHandle);
+  let elapsed = 0;
+  const POLL_INTERVAL = 1000;
+  const MAX_DURATION = 30000;
+
+  pollHandle = setInterval(() => {
+    elapsed += POLL_INTERVAL;
+    run();
+    if (processedUrl === window.location.href || elapsed >= MAX_DURATION) {
+      clearInterval(pollHandle);
+      pollHandle = null;
+    }
+  }, POLL_INTERVAL);
+}
+
 const observer = new MutationObserver(() => {
   if (location.href !== lastUrl) {
     lastUrl = location.href;
     processedUrl = null;
     document.getElementById(BADGE_ID)?.remove();
+    startPolling();
   }
   clearTimeout(debounceTimer);
   debounceTimer = setTimeout(run, 400);
@@ -94,4 +113,4 @@ const observer = new MutationObserver(() => {
 observer.observe(document.body, { childList: true, subtree: true });
 
 run();
-[500, 1500, 3000, 5000].forEach(delay => setTimeout(run, delay));
+startPolling();

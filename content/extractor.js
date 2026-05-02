@@ -13,12 +13,19 @@ const SELECTORS = {
   }
 };
 
+function getText(el) {
+  if (!el) return '';
+  const visible = (el.innerText || '').trim();
+  if (visible.length >= 100) return visible;
+  return (el.textContent || '').trim();
+}
+
 function extractJobDescription() {
   const hostname = window.location.hostname;
 
   if (hostname === 'weworkremotely.com') {
-    const desc = document.querySelector('.lis-container__job__content')?.innerText.trim() || '';
-    const about = document.querySelector('.lis-container__job__sidebar__job-about')?.innerText.trim() || '';
+    const desc = getText(document.querySelector('.lis-container__job__content'));
+    const about = getText(document.querySelector('.lis-container__job__sidebar__job-about'));
     const combined = [desc, about].filter(Boolean).join('\n\n').trim();
     return combined || null;
   }
@@ -26,10 +33,8 @@ function extractJobDescription() {
   const selectors = SELECTORS[hostname];
   if (!selectors) return null;
 
-  const descriptionEl = document.querySelector(selectors.description);
-  if (!descriptionEl) return null;
-
-  return descriptionEl.innerText.trim();
+  const text = getText(document.querySelector(selectors.description));
+  return text || null;
 }
 
 function extractJobTitle() {
