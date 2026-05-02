@@ -45,28 +45,8 @@ function createLoadingBadge() {
 }
 
 function injectBadge(badgeEl) {
-  const hostname = window.location.hostname;
-  let insertBefore;
-
-  if (hostname.includes('linkedin')) {
-    insertBefore = document.querySelector('.job-details-jobs-unified-top-card__primary-description-container')
-      || document.querySelector('.job-details-fit-level-card')?.closest('.artdeco-card')
-      || document.querySelector('.jobs-description__content');
-  } else if (hostname.includes('indeed')) {
-    const titleContainer = document.querySelector('.jobsearch-JobInfoHeader-title-container');
-    insertBefore = titleContainer?.nextElementSibling
-      || document.querySelector('#jobDescriptionText');
-  } else if (hostname.includes('weworkremotely')) {
-    const titleEl = document.querySelector('.lis-container__header__hero__company-info__title');
-    const hero = titleEl?.closest('[class*="lis-container__header"]');
-    insertBefore = hero?.nextElementSibling
-      || document.querySelector('.lis-container__job')
-      || document.querySelector('.lis-container__job__content');
-  }
-
-  if (insertBefore && insertBefore.parentNode) {
-    insertBefore.parentNode.insertBefore(badgeEl, insertBefore);
-  }
+  document.body.appendChild(badgeEl);
+  return true;
 }
 
 let processedUrl = null;
@@ -76,11 +56,11 @@ async function run() {
   if (!text || text.length < 100) return;
 
   if (processedUrl === window.location.href) return;
-  processedUrl = window.location.href;
 
   const MIN_LOADING_MS = 800;
   const loadStart = Date.now();
   injectBadge(createLoadingBadge());
+  processedUrl = window.location.href;
 
   chrome.runtime.sendMessage(
     { type: 'CLASSIFY', text, url: window.location.href },

@@ -1,19 +1,23 @@
 #remoteproof-badge {
+  position: fixed;
+  top: 80px;
+  right: 24px;
+  z-index: 999999;
   display: inline-flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
   row-gap: 6px;
-  padding: 8px 12px 10px;
+  padding: 10px 14px 12px;
   border-radius: 12px;
   font-size: 13px;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   font-weight: 500;
-  margin: 12px 0;
   border: 1px solid transparent;
-  max-width: 600px;
+  max-width: 360px;
   cursor: default;
   line-height: 1.2;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.04);
 }
 
 #remoteproof-badge .rp-dot {
