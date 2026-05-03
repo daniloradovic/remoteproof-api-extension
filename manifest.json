@@ -5,7 +5,9 @@
   "description": "Know if a remote job is truly worldwide before you apply.",
   "permissions": [
     "storage",
-    "activeTab"
+    "activeTab",
+    "scripting",
+    "webNavigation"
   ],
   "host_permissions": [
     "https://www.linkedin.com/*",
@@ -34,6 +36,7 @@
     "128": "icons/icon128.png"
   },
   "action": {
+    "default_popup": "popup/popup.html",
     "default_icon": {
       "16": "icons/icon16.png",
       "48": "icons/icon48.png",

@@ -36,6 +36,17 @@ async function classifyJob(text, url) {
   return result;
 }
 
+const tabState = new Map();
+
+function applyBadge(tabId, state) {
+  if (state === 'stuck') {
+    chrome.action.setBadgeText({ tabId, text: '!' });
+    chrome.action.setBadgeBackgroundColor({ tabId, color: '#f59e0b' });
+  } else {
+    chrome.action.setBadgeText({ tabId, text: '' });
+  }
+}
+
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === 'CLASSIFY') {
     classifyJob(message.text, message.url)
@@ -43,9 +54,85 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       .catch(error => sendResponse({ success: false, error: error.message }));
     return true;
   }
+
+  if (message.type === 'STATE' && sender.tab?.id) {
+    tabState.set(sender.tab.id, message.state);
+    applyBadge(sender.tab.id, message.state);
+    return false;
+  }
+
+  if (message.type === 'GET_STATE') {
+    const state = tabState.get(message.tabId) || 'idle';
+    sendResponse({ state });
+    return false;
+  }
 });
 
-chrome.action.onClicked.addListener((tab) => {
-  if (!tab?.id) return;
-  chrome.tabs.sendMessage(tab.id, { type: 'REFRESH' }).catch(() => {});
+chrome.tabs.onRemoved.addListener((tabId) => {
+  tabState.delete(tabId);
 });
+
+async function injectContentScript(tabId) {
+  await chrome.scripting.executeScript({
+    target: { tabId },
+    files: ['content/extractor.js', 'content/content.js']
+  });
+  await chrome.scripting.insertCSS({
+    target: { tabId },
+    files: ['styles/badge.css']
+  });
+}
+
+const JOB_URL_RE = /^https:\/\/(www\.linkedin\.com\/jobs|www\.indeed\.com\/(viewjob|jobs)|weworkremotely\.com\/remote-jobs\/)/;
+
+async function isContentScriptAlive(tabId) {
+  try {
+    const response = await chrome.tabs.sendMessage(tabId, { type: 'PING' });
+    return response?.alive === true;
+  } catch {
+    return false;
+  }
+}
+
+async function ensureContentScript(tabId, url) {
+  if (await isContentScriptAlive(tabId)) return;
+  try {
+    await injectContentScript(tabId);
+    await chrome.tabs.sendMessage(tabId, { type: 'REFRESH' }).catch(() => {});
+  } catch (e) {
+    console.error('[RemoteProof] inject failed →', url, e.message);
+  }
+}
+
+chrome.webNavigation.onHistoryStateUpdated.addListener(
+  (details) => {
+    if (details.frameId !== 0) return;
+    if (!JOB_URL_RE.test(details.url || '')) return;
+    ensureContentScript(details.tabId, details.url);
+  },
+  {
+    url: [
+      { hostEquals: 'www.linkedin.com' },
+      { hostEquals: 'www.indeed.com', pathPrefix: '/viewjob' },
+      { hostEquals: 'www.indeed.com', pathPrefix: '/jobs' },
+      { hostEquals: 'weworkremotely.com', pathPrefix: '/remote-jobs/' }
+    ]
+  }
+);
+
+async function injectIntoOpenTabs() {
+  const tabs = await chrome.tabs.query({
+    url: [
+      'https://www.linkedin.com/*',
+      'https://www.indeed.com/*',
+      'https://weworkremotely.com/remote-jobs/*'
+    ]
+  });
+  for (const tab of tabs) {
+    if (!tab.id || !tab.url) continue;
+    injectContentScript(tab.id).catch(() => {});
+  }
+}
+
+chrome.runtime.onInstalled.addListener(injectIntoOpenTabs);
+chrome.runtime.onStartup.addListener(injectIntoOpenTabs);

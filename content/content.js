@@ -1,3 +1,9 @@
+if (window.__remoteproofLoaded) {
+  // already initialized in this tab
+} else {
+  window.__remoteproofLoaded = true;
+  document.documentElement.setAttribute('data-remoteproof', 'loaded');
+
 const BADGE_ID = 'remoteproof-badge';
 
 const VERDICT_CONFIG = {
@@ -46,21 +52,23 @@ function createLoadingBadge() {
 
 function injectBadge(badgeEl) {
   document.body.appendChild(badgeEl);
-  return true;
 }
 
 let processedUrl = null;
+let currentState = 'idle';
 
-async function run() {
-  const text = extractJobDescription();
-  if (!text || text.length < 100) return;
+function setState(next) {
+  if (currentState === next) return;
+  currentState = next;
+  try {
+    chrome.runtime.sendMessage({ type: 'STATE', state: next }).catch(() => {});
+  } catch {}
+}
 
-  if (processedUrl === window.location.href) return;
-
+function classifyAndRender(text) {
   const MIN_LOADING_MS = 800;
   const loadStart = Date.now();
   injectBadge(createLoadingBadge());
-  processedUrl = window.location.href;
 
   chrome.runtime.sendMessage(
     { type: 'CLASSIFY', text, url: window.location.href },
@@ -78,49 +86,101 @@ async function run() {
   );
 }
 
-let lastUrl = location.href;
-let debounceTimer;
+function isJobUrl() {
+  const host = window.location.host;
+  const path = window.location.pathname;
+  if (host === 'www.linkedin.com') return path.startsWith('/jobs');
+  if (host === 'www.indeed.com') return path.startsWith('/viewjob') || path.startsWith('/jobs');
+  if (host === 'weworkremotely.com') return path.startsWith('/remote-jobs/');
+  return false;
+}
 
+function run() {
+  if (!isJobUrl()) {
+    setState('idle');
+    return;
+  }
+  if (processedUrl === window.location.href) return;
+
+  const text = extractJobDescription();
+  if (text && text.length >= 100) {
+    processedUrl = window.location.href;
+    setState('working');
+    classifyAndRender(text);
+  }
+}
+
+function getNavKey() {
+  const url = new URL(window.location.href);
+  const jobId = url.searchParams.get('currentJobId');
+  return url.origin + url.pathname + (jobId ? '#' + jobId : '');
+}
+
+let lastUrl = getNavKey();
+let debounceTimer = null;
 let pollHandle = null;
 
-function nudgeLazyLoad() {
-  // Many SPAs lazy-render content based on scroll/resize/visibility events.
-  // Fire harmless events to nudge LinkedIn into hydrating the description container.
-  window.dispatchEvent(new Event('scroll'));
-  window.dispatchEvent(new Event('resize'));
-}
+const STUCK_AFTER_POLLS = 6;
 
 function startPolling() {
   if (pollHandle) clearInterval(pollHandle);
-  let elapsed = 0;
-  const POLL_INTERVAL = 1000;
-  const MAX_DURATION = 30000;
-
+  if (!isJobUrl()) return;
+  if (processedUrl === null) setState('pending');
+  let attempts = 0;
+  let markedStuck = false;
   pollHandle = setInterval(() => {
-    elapsed += POLL_INTERVAL;
-    nudgeLazyLoad();
-    run();
-    if (processedUrl === window.location.href || elapsed >= MAX_DURATION) {
+    if (!isJobUrl() || processedUrl === window.location.href) {
       clearInterval(pollHandle);
       pollHandle = null;
+      return;
     }
-  }, POLL_INTERVAL);
+    run();
+    attempts++;
+    if (attempts >= STUCK_AFTER_POLLS && !markedStuck && processedUrl === null) {
+      markedStuck = true;
+      setState('stuck');
+    }
+  }, 1000);
+}
+
+function onUrlChanged() {
+  lastUrl = getNavKey();
+  processedUrl = null;
+  document.getElementById(BADGE_ID)?.remove();
+  setState(isJobUrl() ? 'pending' : 'idle');
+  run();
+  startPolling();
 }
 
 const observer = new MutationObserver(() => {
-  if (location.href !== lastUrl) {
-    lastUrl = location.href;
-    processedUrl = null;
-    document.getElementById(BADGE_ID)?.remove();
-    startPolling();
+  if (getNavKey() !== lastUrl) {
+    onUrlChanged();
+    return;
   }
+  if (processedUrl === window.location.href) return;
   clearTimeout(debounceTimer);
-  debounceTimer = setTimeout(run, 400);
+  debounceTimer = setTimeout(run, 300);
 });
 
-observer.observe(document.body, { childList: true, subtree: true });
+observer.observe(document.documentElement, {
+  childList: true,
+  subtree: true,
+  characterData: true,
+});
 
-chrome.runtime.onMessage.addListener((message) => {
+window.addEventListener('popstate', () => {
+  if (getNavKey() !== lastUrl) onUrlChanged();
+});
+
+setInterval(() => {
+  if (getNavKey() !== lastUrl) onUrlChanged();
+}, 1000);
+
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message?.type === 'PING') {
+    sendResponse({ alive: true });
+    return;
+  }
   if (message?.type === 'REFRESH') {
     processedUrl = null;
     document.getElementById(BADGE_ID)?.remove();
@@ -129,5 +189,17 @@ chrome.runtime.onMessage.addListener((message) => {
   }
 });
 
+document.addEventListener('remoteproof:debug', () => {
+  const text = extractJobDescription();
+  const el = document.documentElement;
+  el.setAttribute('data-rp-extracted-len', text ? String(text.length) : 'null');
+  el.setAttribute('data-rp-processed', processedUrl || 'null');
+  el.setAttribute('data-rp-isjob', String(isJobUrl()));
+  el.setAttribute('data-rp-lasturl', lastUrl);
+  el.setAttribute('data-rp-navkey', getNavKey());
+});
+
 run();
 startPolling();
+
+}
