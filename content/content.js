@@ -87,12 +87,7 @@ function classifyAndRender(text) {
 }
 
 function isJobUrl() {
-  const host = window.location.host;
-  const path = window.location.pathname;
-  if (host === 'www.linkedin.com') return path.startsWith('/jobs');
-  if (host === 'www.indeed.com') return path.startsWith('/viewjob') || path.startsWith('/jobs');
-  if (host === 'weworkremotely.com') return path.startsWith('/remote-jobs/');
-  return false;
+  return isJobUrlForSite();
 }
 
 function run() {

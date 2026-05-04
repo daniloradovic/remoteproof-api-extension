@@ -10,19 +10,25 @@
     "webNavigation"
   ],
   "host_permissions": [
-    "https://www.linkedin.com/*",
     "https://www.indeed.com/*",
     "https://weworkremotely.com/*",
+    "https://remoteok.com/*",
+    "https://*.greenhouse.io/*",
+    "https://jobs.lever.co/*",
+    "https://jobs.ashbyhq.com/*",
     "http://remoteproof-api.test/*"
   ],
   "content_scripts": [
     {
       "matches": [
-        "https://www.linkedin.com/*",
         "https://www.indeed.com/*",
-        "https://weworkremotely.com/remote-jobs/*"
+        "https://weworkremotely.com/remote-jobs/*",
+        "https://remoteok.com/remote-jobs/*",
+        "https://*.greenhouse.io/*",
+        "https://jobs.lever.co/*",
+        "https://jobs.ashbyhq.com/*"
       ],
-      "js": ["content/extractor.js", "content/content.js"],
+      "js": ["content/sites.js", "content/extractor.js", "content/content.js"],
       "css": ["styles/badge.css"],
       "run_at": "document_idle"
     }
