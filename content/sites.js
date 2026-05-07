@@ -19,7 +19,56 @@
 //     fallback:       function () { ... },        // optional; runs if descSelectors all miss
 //   }
 
+var LINKEDIN_DESC_SELECTORS = [
+  '.jobs-description__content',
+  '.jobs-description-content',
+  '.jobs-box__html-content',
+  '.jobs-description__container',
+  '.jobs-search__job-details--container',
+  '.jobs-details__main-content',
+  '[class*="jobs-description"]',
+  '[class*="job-details"]',
+  '.job-view-layout',
+  '[class*="description"]',
+];
+
+var LINKEDIN_JOB_KEYWORDS = [
+  'about the job', 'about this role', 'responsibilities', 'requirements',
+  'qualifications', 'what you\'ll do', 'what you will do', 'who you are',
+  'about us', 'about the company', 'we are looking for', 'we\'re looking for',
+];
+
+function scoreLinkedInCandidate(el) {
+  var text = (el.innerText || '').trim();
+  var len = text.length;
+  if (len < 200 || len > 50000) return { text: null, score: 0 };
+  var lower = text.toLowerCase();
+  var hits = LINKEDIN_JOB_KEYWORDS.reduce(function (n, kw) { return n + (lower.includes(kw) ? 1 : 0); }, 0);
+  if (hits < 2) return { text: null, score: 0 };
+  return { text: text, score: hits * 100000 - len };
+}
+
+function extractLinkedInFallback() {
+  var main = document.querySelector('main') || document.body;
+  var best = null;
+  var bestScore = 0;
+  var nodes = main.querySelectorAll('article, section, div');
+  for (var i = 0; i < nodes.length; i++) {
+    var r = scoreLinkedInCandidate(nodes[i]);
+    if (r.score > bestScore) { best = r.text; bestScore = r.score; }
+  }
+  return best;
+}
+
 var SITES = [
+  {
+    id: 'linkedin',
+    host: 'www.linkedin.com',
+    isJobUrl: function (loc) { return loc.pathname.startsWith('/jobs'); },
+    descSelectors: LINKEDIN_DESC_SELECTORS,
+    titleSelector: '.job-details-jobs-unified-top-card__job-title',
+    fallback: extractLinkedInFallback,
+  },
   {
     id: 'indeed',
     host: 'www.indeed.com',

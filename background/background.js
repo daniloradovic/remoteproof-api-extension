@@ -83,7 +83,7 @@ async function injectContentScript(tabId) {
   });
 }
 
-const JOB_URL_RE = /^https:\/\/(www\.indeed\.com\/(viewjob|jobs)|weworkremotely\.com\/remote-jobs\/|remoteok\.com\/remote-jobs\/|[a-z0-9-]+\.greenhouse\.io\/|jobs\.lever\.co\/|jobs\.ashbyhq\.com\/)/;
+const JOB_URL_RE = /^https:\/\/(www\.linkedin\.com\/jobs|www\.indeed\.com\/(viewjob|jobs)|weworkremotely\.com\/remote-jobs\/|remoteok\.com\/remote-jobs\/|[a-z0-9-]+\.greenhouse\.io\/|jobs\.lever\.co\/|jobs\.ashbyhq\.com\/)/;
 
 async function isContentScriptAlive(tabId) {
   try {
@@ -112,6 +112,7 @@ chrome.webNavigation.onHistoryStateUpdated.addListener(
   },
   {
     url: [
+      { hostEquals: 'www.linkedin.com' },
       { hostEquals: 'www.indeed.com', pathPrefix: '/viewjob' },
       { hostEquals: 'www.indeed.com', pathPrefix: '/jobs' },
       { hostEquals: 'weworkremotely.com', pathPrefix: '/remote-jobs/' },
@@ -126,6 +127,7 @@ chrome.webNavigation.onHistoryStateUpdated.addListener(
 async function injectIntoOpenTabs() {
   const tabs = await chrome.tabs.query({
     url: [
+      'https://www.linkedin.com/*',
       'https://www.indeed.com/*',
       'https://weworkremotely.com/remote-jobs/*',
       'https://remoteok.com/remote-jobs/*',
