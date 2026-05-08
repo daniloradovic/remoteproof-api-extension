@@ -115,7 +115,7 @@ chrome.webNavigation.onHistoryStateUpdated.addListener(
   },
   {
     url: [
-      { hostEquals: 'www.linkedin.com' },
+      { hostEquals: 'www.linkedin.com', pathPrefix: '/jobs' },
       { hostEquals: 'www.indeed.com', pathPrefix: '/viewjob' },
       { hostEquals: 'www.indeed.com', pathPrefix: '/jobs' },
       { hostEquals: 'weworkremotely.com', pathPrefix: '/remote-jobs/' },
