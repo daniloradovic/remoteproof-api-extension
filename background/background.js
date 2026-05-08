@@ -1,4 +1,7 @@
-const API_URL = 'http://remoteproof-api.test/api/classify';
+const DEV = false;
+const API_URL = DEV
+  ? 'http://remoteproof-api.test/api/classify'
+  : 'https://remoteproof-api-production.up.railway.app/api/classify';
 const CACHE_TTL = 24 * 60 * 60 * 1000;
 
 async function classifyJob(text, url) {

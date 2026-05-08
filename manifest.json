@@ -17,6 +17,7 @@
     "https://*.greenhouse.io/*",
     "https://jobs.lever.co/*",
     "https://jobs.ashbyhq.com/*",
+    "https://remoteproof-api-production.up.railway.app/*",
     "http://remoteproof-api.test/*"
   ],
   "content_scripts": [
