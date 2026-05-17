@@ -84,6 +84,37 @@
   color: #64748b;
 }
 
+#remoteproof-badge.quota {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+  color: #1e40af;
+}
+
+#remoteproof-badge.error {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: #475569;
+}
+
+#remoteproof-badge .rp-retry {
+  margin-left: 16px;
+  margin-top: 4px;
+  padding: 4px 10px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  background: transparent;
+  color: inherit;
+  border: 1px solid currentColor;
+  border-radius: 6px;
+  cursor: pointer;
+  opacity: 0.85;
+}
+
+#remoteproof-badge .rp-retry:hover {
+  opacity: 1;
+}
+
 #remoteproof-badge.loading .rp-dot {
   animation: rp-pulse 1.2s ease-in-out infinite;
 }

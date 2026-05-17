@@ -13,30 +13,43 @@ async function classifyJob(text, url) {
       const entry = cached[cacheKey];
       const isExpired = Date.now() - entry.timestamp > CACHE_TTL;
       if (!isExpired) {
-        return { ...entry.data, cached: true };
+        return { success: true, data: { ...entry.data, cached: true } };
       }
     }
   }
 
-  const response = await fetch(API_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-    body: JSON.stringify({ text, url })
-  });
-
-  if (!response.ok) {
-    throw new Error(`API error: ${response.status}`);
+  let response;
+  try {
+    response = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify({ text, url })
+    });
+  } catch {
+    return {
+      success: false,
+      status: 0,
+      error: 'Network error. Check your connection and try again.',
+    };
   }
 
-  const result = await response.json();
+  const body = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    return {
+      success: false,
+      status: response.status,
+      error: body.error || `Request failed (${response.status}).`,
+    };
+  }
 
   if (url) {
     await chrome.storage.local.set({
-      [cacheKey]: { data: result, timestamp: Date.now() }
+      [cacheKey]: { data: body, timestamp: Date.now() }
     });
   }
 
-  return result;
+  return { success: true, data: body };
 }
 
 const tabState = new Map();
@@ -53,8 +66,8 @@ function applyBadge(tabId, state) {
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === 'CLASSIFY') {
     classifyJob(message.text, message.url)
-      .then(result => sendResponse({ success: true, data: result }))
-      .catch(error => sendResponse({ success: false, error: error.message }));
+      .then(result => sendResponse(result))
+      .catch(error => sendResponse({ success: false, status: 0, error: error.message }));
     return true;
   }
 

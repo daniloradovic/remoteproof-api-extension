@@ -31,11 +31,49 @@ function createBadge(verdict, reason) {
   badge.innerHTML = `
     <span class="rp-dot"></span>
     <span class="rp-label">${config.label}</span>
-    <button class="rp-dismiss" title="Dismiss">×</button>
+    <button class="rp-dismiss" aria-label="Dismiss" title="Dismiss">×</button>
     ${safeReason ? `<span class="rp-reason">${safeReason}</span>` : ''}
   `;
 
   badge.querySelector('.rp-dismiss').addEventListener('click', () => badge.remove());
+  return badge;
+}
+
+function createQuotaBadge(message) {
+  const existing = document.getElementById(BADGE_ID);
+  if (existing) existing.remove();
+
+  const badge = document.createElement('div');
+  badge.id = BADGE_ID;
+  badge.className = 'quota';
+  badge.innerHTML = `
+    <span class="rp-dot"></span>
+    <span class="rp-label">Limit reached</span>
+    <button class="rp-dismiss" aria-label="Dismiss" title="Dismiss">×</button>
+    <span class="rp-reason">${escapeHtml(message)}</span>
+  `;
+  badge.querySelector('.rp-dismiss').addEventListener('click', () => badge.remove());
+  return badge;
+}
+
+function createErrorBadge(message, onRetry) {
+  const existing = document.getElementById(BADGE_ID);
+  if (existing) existing.remove();
+
+  const badge = document.createElement('div');
+  badge.id = BADGE_ID;
+  badge.className = 'error';
+  badge.innerHTML = `
+    <span class="rp-dot"></span>
+    <span class="rp-label">Couldn't classify</span>
+    <button class="rp-dismiss" aria-label="Dismiss" title="Dismiss">×</button>
+    <span class="rp-reason">${escapeHtml(message)}</span>
+    <button class="rp-retry" type="button">Retry</button>
+  `;
+  badge.querySelector('.rp-dismiss').addEventListener('click', () => badge.remove());
+  badge.querySelector('.rp-retry').addEventListener('click', () => {
+    if (typeof onRetry === 'function') onRetry();
+  });
   return badge;
 }
 
@@ -73,13 +111,17 @@ function classifyAndRender(text) {
   chrome.runtime.sendMessage(
     { type: 'CLASSIFY', text, url: window.location.href },
     (response) => {
-      const wait = Math.max(0, MIN_LOADING_MS - (Date.now() - loadStart));
+      const cached = response?.data?.cached === true;
+      const wait = cached ? 0 : Math.max(0, MIN_LOADING_MS - (Date.now() - loadStart));
       setTimeout(() => {
         if (response && response.success) {
           const { verdict, reason } = response.data;
           injectBadge(createBadge(verdict, reason));
+        } else if (response && response.status === 429) {
+          injectBadge(createQuotaBadge(response.error));
         } else {
-          injectBadge(createBadge('UNCLEAR', 'Could not classify this listing.'));
+          const message = response?.error || 'Could not classify this listing.';
+          injectBadge(createErrorBadge(message, () => classifyAndRender(text)));
         }
       }, wait);
     }
