@@ -3,6 +3,15 @@ const API_URL = DEV
   ? 'http://remoteproof-api.test/api/classify'
   : 'https://www.remoteproof.app/api/classify';
 const CACHE_TTL = 24 * 60 * 60 * 1000;
+const ANON_ID_KEY = 'anonId';
+
+async function getOrCreateAnonId() {
+  const stored = await chrome.storage.local.get(ANON_ID_KEY);
+  if (stored[ANON_ID_KEY]) return stored[ANON_ID_KEY];
+  const fresh = crypto.randomUUID();
+  await chrome.storage.local.set({ [ANON_ID_KEY]: fresh });
+  return fresh;
+}
 
 async function classifyJob(text, url) {
   const cacheKey = `classification_${url}`;
@@ -18,11 +27,17 @@ async function classifyJob(text, url) {
     }
   }
 
+  const anonId = await getOrCreateAnonId();
+
   let response;
   try {
     response = await fetch(API_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'X-Anon-Id': anonId,
+      },
       body: JSON.stringify({ text, url })
     });
   } catch {
